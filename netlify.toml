@@ -1,0 +1,4 @@
+[build]
+  functions = "functions"  # Specifies the directory containing functions
+[dev]
+  command = "npm install"  # Runs before starting the dev server
