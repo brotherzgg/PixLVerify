@@ -37,10 +37,7 @@ exports.handler = async (event, context) => {
         const emailVerified = attributes.is_email_verified;
         console.log('Email verified:', emailVerified);
 
-        if (emailVerified === undefined || emailVerified === null || !emailVerified) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Please verify your Patreon email or check token scopes' }) };
-        }
-
+        // Proceed with subscription check even if email verification is missing
         const campaignResponse = await axios.get('https://www.patreon.com/api/oauth2/v2/campaigns', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
