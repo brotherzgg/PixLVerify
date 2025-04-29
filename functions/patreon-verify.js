@@ -51,7 +51,7 @@ exports.handler = async (event, context) => {
         }
 
         // Step 2: Check if the user is a member of your campaign
-        const campaignId = 'YOUR_CAMPAIGN_ID'; // Replace with your actual campaign ID
+        const campaignId = '5550912'; // Replace with your actual campaign ID
         const membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?include=user&fields[member]=currently_entitled_amount_cents,patron_status&fields[user]=id`, {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
