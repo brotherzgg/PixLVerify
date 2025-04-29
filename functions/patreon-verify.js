@@ -37,7 +37,7 @@ exports.handler = async (event, context) => {
 
     try {
         // Step 1: Get the user's identity to fetch their user ID
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?fields[user]=id', {
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
