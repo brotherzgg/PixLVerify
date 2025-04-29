@@ -1,10 +1,8 @@
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
-    // Log the full event for debugging
-    console.log('Full event:', JSON.stringify(event, null, 2));
+    console.log('Received event:', JSON.stringify(event, null, 2));
 
-    // Extract code from query string parameters
     const { code } = event.queryStringParameters || {};
     if (!code) {
         return {
@@ -20,6 +18,7 @@ exports.handler = async (event, context) => {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
             }
         );
+        console.log('Token response:', JSON.stringify(response.data, null, 2));
 
         return {
             statusCode: 302,
