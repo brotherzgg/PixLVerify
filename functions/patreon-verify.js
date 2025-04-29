@@ -36,8 +36,8 @@ exports.handler = async (event, context) => {
     };
 
     try {
-        // Step 1: Get the user's identity to fetch their user ID
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity', {
+        // Step 1: Get the user's identity and memberships
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships&fields[member]=currently_entitled_amount_cents,patron_status&fields[campaign]=id', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
@@ -45,38 +45,21 @@ exports.handler = async (event, context) => {
         }));
         console.log('Identity response:', JSON.stringify(identityResponse.data, null, 2));
 
-        const userId = identityResponse.data.data.id;
-        if (!userId) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'No user ID found' }) };
-        }
-
         // Step 2: Check if the user is a member of your campaign
         const campaignId = '5550912'; // Your campaign ID
-        let membersResponse;
-        try {
-            membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?include=user&fields[member]=currently_entitled_amount_cents,patron_status`, {
-                headers: { 
-                    'Authorization': `Bearer ${accessToken}`,
-                    'User-Agent': 'PixL - Subscription Check'
-                }
-            }));
-        } catch (error) {
-            if (error.response?.status === 404) {
-                console.log(`Campaign ${campaignId} not found or inaccessible`);
-                return { statusCode: 200, body: JSON.stringify({ isSubscribed: false }) };
-            }
-            throw error; // Re-throw other errors
-        }
-        console.log('Members response:', JSON.stringify(membersResponse.data, null, 2));
+        const memberships = identityResponse.data.included || [];
+        const membership = memberships.find(m => 
+            m.type === 'member' && 
+            m.relationships?.campaign?.data?.id === campaignId
+        );
 
-        // Find the member entry for this user
-        const member = membersResponse.data.data.find(m => m.relationships.user.data.id === userId);
-        if (!member) {
+        if (!membership) {
+            console.log('User is not a member of the specified campaign');
             return { statusCode: 200, body: JSON.stringify({ isSubscribed: false }) };
         }
 
-        const isSubscribed = member.attributes.patron_status === 'active_patron' &&
-                            (member.attributes.currently_entitled_amount_cents === 99 || member.attributes.currently_entitled_amount_cents === 999);
+        const isSubscribed = membership.attributes.patron_status === 'active_patron' &&
+                            (membership.attributes.currently_entitled_amount_cents === 99 || membership.attributes.currently_entitled_amount_cents === 999);
         console.log('Is subscribed:', isSubscribed);
 
         return {
