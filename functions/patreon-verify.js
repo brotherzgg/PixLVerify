@@ -1,12 +1,24 @@
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
+    console.log('Received event:', JSON.stringify(event, null, 2));
+
     if (event.httpMethod !== 'POST') {
+        console.log('Method not allowed:', event.httpMethod);
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { accessToken } = JSON.parse(event.body || '{}');
+    let body;
+    try {
+        body = JSON.parse(event.body || '{}');
+    } catch (e) {
+        console.log('Failed to parse body:', e.message);
+        return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+    }
+
+    const { accessToken } = body;
     if (!accessToken) {
+        console.log('No access token provided');
         return { statusCode: 400, body: JSON.stringify({ error: 'No access token provided' }) };
     }
 
@@ -15,6 +27,7 @@ exports.handler = async (event, context) => {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const emailVerified = identityResponse.data.data.attributes.is_email_verified;
+        console.log('Email verified:', emailVerified);
 
         if (!emailVerified) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Please verify your Patreon email' }) };
@@ -24,6 +37,7 @@ exports.handler = async (event, context) => {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const campaignId = campaignResponse.data.data[0].id;
+        console.log('Campaign ID:', campaignId);
 
         const pledgesResponse = await axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/pledges`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -34,12 +48,14 @@ exports.handler = async (event, context) => {
             const status = pledge.attributes.declined_since === null;
             return (amount === 0.99 || amount === 9.99) && status;
         });
+        console.log('Is subscribed:', isSubscribed);
 
         return {
             statusCode: 200,
             body: JSON.stringify({ isSubscribed })
         };
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'Verification failed' }) };
+        console.log('Verification error:', error.response ? error.response.data : error.message);
+        return { statusCode: 500, body: JSON.stringify({ error: 'Verification failed', details: error.response ? error.response.data : error.message }) };
     }
 };
