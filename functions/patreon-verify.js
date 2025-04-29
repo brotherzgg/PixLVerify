@@ -36,27 +36,23 @@ exports.handler = async (event, context) => {
     };
 
     try {
-        // Get campaigns
-        const campaignResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/campaigns', {
+        // Step 1: Get the user's identity to fetch their user ID
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?fields[user]=id', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
             }
         }));
-        console.log('Campaign response:', JSON.stringify(campaignResponse.data, null, 2));
+        console.log('Identity response:', JSON.stringify(identityResponse.data, null, 2));
 
-        const campaignData = campaignResponse.data.data;
-        if (!campaignData || campaignData.length === 0) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'No campaigns found for this user' }) };
+        const userId = identityResponse.data.data.id;
+        if (!userId) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'No user ID found' }) };
         }
 
-        // TODO: If you have multiple campaigns, filter by name or ID, e.g.:
-        // const campaign = campaignData.find(c => c.attributes.name === 'Your Campaign Name');
-        const campaignId = campaignData[0].id;
-        console.log('Campaign ID:', campaignId);
-
-        // Get members
-        const membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?fields[member]=currently_entitled_amount_cents,patron_status`, {
+        // Step 2: Check if the user is a member of your campaign
+        const campaignId = 'YOUR_CAMPAIGN_ID'; // Replace with your actual campaign ID
+        const membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?include=user&fields[member]=currently_entitled_amount_cents,patron_status&fields[user]=id`, {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
@@ -64,11 +60,14 @@ exports.handler = async (event, context) => {
         }));
         console.log('Members response:', JSON.stringify(membersResponse.data, null, 2));
 
-        const isSubscribed = membersResponse.data.data.some(member => {
-            const amount = member.attributes.currently_entitled_amount_cents;
-            const status = member.attributes.patron_status === 'active_patron';
-            return (amount === 99 || amount === 999) && status;
-        });
+        // Find the member entry for this user
+        const member = membersResponse.data.data.find(m => m.relationships.user.data.id === userId);
+        if (!member) {
+            return { statusCode: 200, body: JSON.stringify({ isSubscribed: false }) };
+        }
+
+        const isSubscribed = member.attributes.patron_status === 'active_patron' &&
+                            (member.attributes.currently_entitled_amount_cents === 99 || member.attributes.currently_entitled_amount_cents === 999);
         console.log('Is subscribed:', isSubscribed);
 
         return {
