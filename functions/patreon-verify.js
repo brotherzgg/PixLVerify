@@ -30,14 +30,15 @@ exports.handler = async (event, context) => {
 
         const identityData = identityResponse.data.data;
         if (!identityData || !Array.isArray(identityData) || identityData.length === 0) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Invalid identity data from Patreon' }) };
+            return { statusCode: 400, body: JSON.stringify({ error: 'No identity data returned from Patreon' }) };
         }
 
-        const emailVerified = identityData[0].attributes?.is_email_verified;
+        const attributes = identityData[0].attributes || {};
+        const emailVerified = attributes.is_email_verified;
         console.log('Email verified:', emailVerified);
 
         if (emailVerified === undefined || emailVerified === null || !emailVerified) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Please verify your Patreon email' }) };
+            return { statusCode: 400, body: JSON.stringify({ error: 'Please verify your Patreon email or check token scopes' }) };
         }
 
         const campaignResponse = await axios.get('https://www.patreon.com/api/oauth2/v2/campaigns', {
