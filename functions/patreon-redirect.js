@@ -3,7 +3,7 @@ const axios = require('axios');
 exports.handler = async (event, context) => {
     console.log('Received event:', JSON.stringify(event, null, 2));
 
-    const { code } = event.queryStringParameters || {};
+    const { code, state } = event.queryStringParameters || {};
     if (!code) {
         return {
             statusCode: 400,
@@ -23,10 +23,12 @@ exports.handler = async (event, context) => {
         );
         console.log('Token response:', JSON.stringify(response.data, null, 2));
 
+        // Include state in the redirect URL if it exists
+        const redirectUrl = `com.example.patreonapp://oauthredirect?access_token=${response.data.access_token}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
         return {
             statusCode: 302,
             headers: {
-                Location: `com.example.patreonapp://oauthredirect?access_token=${response.data.access_token}`
+                Location: redirectUrl
             },
             body: ''
         };
