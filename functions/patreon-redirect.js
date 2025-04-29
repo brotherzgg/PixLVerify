@@ -12,10 +12,13 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const response = await axios.post('https://www.patreon.com/api/oauth2/token', 
-            `code=${encodeURIComponent(code)}&client_id=${encodeURIComponent(process.env.PATREON_CLIENT_ID)}&client_secret=${encodeURIComponent(process.env.PATREON_CLIENT_SECRET)}&grant_type=authorization_code&redirect_uri=${encodeURIComponent('https://pixlverify.netlify.app/.netlify/functions/patreon-redirect')}`, 
+        const response = await axios.post('https://www.patreon.com/api/oauth2/token',
+            `code=${encodeURIComponent(code)}&client_id=${encodeURIComponent(process.env.PATREON_CLIENT_ID)}&client_secret=${encodeURIComponent(process.env.PATREON_CLIENT_SECRET)}&grant_type=authorization_code&redirect_uri=${encodeURIComponent('https://pixlverify.netlify.app/.netlify/functions/patreon-redirect')}`,
             {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': 'PixL - Subscription Check'
+                }
             }
         );
         console.log('Token response:', JSON.stringify(response.data, null, 2));
@@ -28,10 +31,13 @@ exports.handler = async (event, context) => {
             body: ''
         };
     } catch (error) {
-        console.log('Token exchange error:', error.response ? error.response.data : error.message);
+        console.error('Token exchange error:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Token exchange failed', details: error.response ? error.response.data : error.message })
+            body: JSON.stringify({ 
+                error: 'Token exchange failed', 
+                details: error.response ? error.response.data : error.message 
+            })
         };
     }
 };
