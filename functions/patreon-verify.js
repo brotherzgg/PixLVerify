@@ -51,13 +51,22 @@ exports.handler = async (event, context) => {
         }
 
         // Step 2: Check if the user is a member of your campaign
-        const campaignId = '5550912'; // Replace with your actual campaign ID
-        const membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?include=user&fields[member]=currently_entitled_amount_cents,patron_status&fields[user]=id`, {
-            headers: { 
-                'Authorization': `Bearer ${accessToken}`,
-                'User-Agent': 'PixL - Subscription Check'
+        const campaignId = '5550912'; // Your campaign ID
+        let membersResponse;
+        try {
+            membersResponse = await retry(() => axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/members?include=user&fields[member]=currently_entitled_amount_cents,patron_status`, {
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'User-Agent': 'PixL - Subscription Check'
+                }
+            }));
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.log(`Campaign ${campaignId} not found or inaccessible`);
+                return { statusCode: 200, body: JSON.stringify({ isSubscribed: false }) };
             }
-        }));
+            throw error; // Re-throw other errors
+        }
         console.log('Members response:', JSON.stringify(membersResponse.data, null, 2));
 
         // Find the member entry for this user
