@@ -28,25 +28,29 @@ exports.handler = async (event, context) => {
         });
         console.log('Identity response:', JSON.stringify(identityResponse.data, null, 2));
 
-        const identityData = identityResponse.data.data;
-        if (!identityData || !Array.isArray(identityData) || identityData.length === 0) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'No identity data returned from Patreon' }) };
+        let campaignResponse;
+        try {
+            campaignResponse = await axios.get('https://www.patreon.com/api/oauth2/v2/campaigns', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            console.log('Campaign response:', JSON.stringify(campaignResponse.data, null, 2));
+        } catch (error) {
+            console.log('Campaign fetch error:', error.response ? error.response.data : error.message);
+            return { statusCode: 400, body: JSON.stringify({ error: 'Failed to fetch campaigns', details: error.response ? error.response.data : error.message }) };
         }
 
-        const attributes = identityData[0].attributes || {};
-        const emailVerified = attributes.is_email_verified;
-        console.log('Email verified:', emailVerified);
+        const campaignData = campaignResponse.data.data;
+        if (!campaignData || campaignData.length === 0) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'No campaigns found for this user' }) };
+        }
 
-        // Proceed with subscription check even if email verification is missing
-        const campaignResponse = await axios.get('https://www.patreon.com/api/oauth2/v2/campaigns', {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        const campaignId = campaignResponse.data.data[0].id;
+        const campaignId = campaignData[0].id;
         console.log('Campaign ID:', campaignId);
 
         const pledgesResponse = await axios.get(`https://www.patreon.com/api/oauth2/v2/campaigns/${campaignId}/pledges`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+        console.log('Pledges response:', JSON.stringify(pledgesResponse.data, null, 2));
 
         const isSubscribed = pledgesResponse.data.data.some(pledge => {
             const amount = pledge.attributes.amount_cents / 100;
