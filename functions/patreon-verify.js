@@ -36,8 +36,8 @@ exports.handler = async (event, context) => {
     };
 
     try {
-        // Step 1: Get the user's identity and memberships
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships&fields[member]=currently_entitled_amount_cents,patron_status', {
+        // Step 1: Get the user's identity and memberships, including the campaign
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships,campaign&fields[member]=currently_entitled_amount_cents,patron_status', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
         }
 
         const isSubscribed = membership.attributes.patron_status === 'active_patron' &&
-                            membership.attributes.currently_entitled_amount_cents === 100; // Updated to check for $1 (100 cents)
+                            membership.attributes.currently_entitled_amount_cents === 100; // Check for $1 (100 cents)
         console.log('Is subscribed:', isSubscribed);
 
         return {
