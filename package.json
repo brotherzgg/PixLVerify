@@ -1,15 +1,19 @@
 {
-  "name": "patreon-backend",
+  "name": "pixl-verify",
   "version": "1.0.0",
-  "description": "Backend for Patreon OAuth integration with Netlify",
+  "description": "Netlify functions for PixL Patreon subscription verification",
   "main": "index.js",
   "scripts": {
+    "build": "netlify functions:build",
     "start": "netlify dev"
   },
   "dependencies": {
-    "axios": "^1.6.0"
+    "axios": "^1.7.7",
+    "rate-limiter-flexible": "^5.0.3"
   },
   "devDependencies": {
-    "netlify-cli": "^17.0.0"
-  }
+    "netlify-cli": "^17.35.1"
+  },
+  "author": "Your Name",
+  "license": "MIT"
 }
