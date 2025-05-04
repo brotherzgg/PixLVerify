@@ -1,30 +1,35 @@
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
+    console.log('Received redirect event:', JSON.stringify(event, null, 2));
 
-    const { code, state } = event.queryStringParameters || {};
+    const { code } = event.queryStringParameters || {};
     if (!code) {
+        console.log('No authorization code provided');
         return {
             statusCode: 400,
-            body: JSON.stringify({ error: 'No code provided' })
+            body: JSON.stringify({ error: 'No authorization code provided' })
         };
     }
 
-    try {
-        const response = await axios.post('https://www.patreon.com/api/oauth2/token',
-            `code=${encodeURIComponent(code)}&client_id=${encodeURIComponent(process.env.PATREON_CLIENT_ID)}&client_secret=${encodeURIComponent(process.env.PATREON_CLIENT_SECRET)}&grant_type=authorization_code&redirect_uri=${encodeURIComponent('https://pixlverify.netlify.app/.netlify/functions/patreon-redirect')}`,
-            {
-                headers: { 
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'User-Agent': 'PixL - Subscription Check'
-                }
-            }
-        );
-        console.log('Token response:', JSON.stringify(response.data, null, 2));
+    const clientId = process.env.PATREON_CLIENT_ID;
+    const clientSecret = process.env.PATREON_CLIENT_SECRET;
+    const redirectUri = 'https://pixlverify.netlify.app/.netlify/functions/patreon-redirect';
 
-        // Include state in the redirect URL if it exists
-        const redirectUrl = `com.example.patreonapp://oauthredirect?access_token=${response.data.access_token}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
+    try {
+        const response = await axios.post('https://www.patreon.com/api/oauth2/token', {
+            code,
+            grant_type: 'authorization_code',
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri
+        });
+
+        const { access_token, refresh_token } = response.data;
+        console.log('Token exchange successful: [REDACTED]');
+
+        // Redirect back to the app with tokens
+        const redirectUrl = `yourapp://patreon-callback?accessToken=${encodeURIComponent(access_token)}&refreshToken=${encodeURIComponent(refresh_token)}`;
         return {
             statusCode: 302,
             headers: {
@@ -33,13 +38,10 @@ exports.handler = async (event, context) => {
             body: ''
         };
     } catch (error) {
-        console.error('Token exchange error:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        console.error('Token exchange failed:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         return {
             statusCode: 500,
-            body: JSON.stringify({ 
-                error: 'Token exchange failed', 
-                details: error.response ? error.response.data : error.message 
-            })
+            body: JSON.stringify({ error: 'Failed to exchange authorization code' })
         };
     }
 };
