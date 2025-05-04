@@ -36,8 +36,8 @@ exports.handler = async (event, context) => {
     };
 
     try {
-        // Step 1: Get the user's identity and memberships, including the campaign
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships,campaign&fields[member]=currently_entitled_amount_cents,patron_status', {
+        // Step 1: Get the user's identity and memberships, including the campaign for each membership
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships.campaign&fields[member]=currently_entitled_amount_cents,patron_status', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
