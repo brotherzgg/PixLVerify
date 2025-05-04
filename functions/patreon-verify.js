@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
         }
 
         const isSubscribed = membership.attributes.patron_status === 'active_patron' &&
-                            (membership.attributes.currently_entitled_amount_cents === 99 || membership.attributes.currently_entitled_amount_cents === 999);
+                            membership.attributes.currently_entitled_amount_cents === 100; // Updated to check for $1 (100 cents)
         console.log('Is subscribed:', isSubscribed);
 
         return {
