@@ -70,7 +70,7 @@ exports.handler = async (event, context) => {
 
     try {
         // Step 1: Get the user's identity and memberships, including the campaign for each membership
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships.campaign&fields[member]=currently_entitled_amount_cents,patron_status', {
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships.campaign&fields%5Bmember%5D=currently_entitled_amount_cents,patron_status,pledge_relationship_start', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
@@ -138,9 +138,16 @@ exports.handler = async (event, context) => {
         const isSubscribed = patronStatus === 'active_patron' && amountCents >= minimumAmountCents;
         console.log('Is subscribed:', isSubscribed, `Amount: $${(amountCents / 100).toFixed(2)}`);
 
+        // Include pledge_relationship_start in the response if subscribed
+        const pledgeStart = membership.attributes.pledge_relationship_start;
+
         return {
             statusCode: 200,
-            body: JSON.stringify({ isSubscribed, amount: amountCents / 100 })
+            body: JSON.stringify({ 
+                isSubscribed, 
+                amount: amountCents / 100,
+                ...(isSubscribed && pledgeStart ? { pledgeStart } : {})
+            })
         };
     } catch (error) {
         // Edge Case: Handle specific error types
