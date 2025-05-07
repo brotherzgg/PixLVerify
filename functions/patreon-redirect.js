@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
         console.log('Token exchange successful: [REDACTED]');
 
         // Redirect back to the app with tokens
-        const redirectUrl = `com.example.patreonapp://oauthredirect?accessToken=${encodeURIComponent(access_token)}&refreshToken=${encodeURIComponent(refresh_token)}&state=${encodeURIComponent(state)}`;
+        const redirectUrl = `com.pixl.store://oauthredirect?accessToken=${encodeURIComponent(access_token)}&refreshToken=${encodeURIComponent(refresh_token)}&state=${encodeURIComponent(state)}`;
         return {
             statusCode: 302,
             headers: {
