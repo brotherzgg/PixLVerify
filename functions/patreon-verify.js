@@ -86,7 +86,7 @@ exports.handler = async (event, context) => {
         // Edge Case: No memberships found
         if (!memberships.length) {
             console.log('No memberships found for user');
-            return { statusCode: 200, body: JSON.stringify({ isSubscribed: false, reason: 'No memberships' }) };
+            return { statusCode: 200, body: JSON.stringify({ isSubscribed: false, reason: 'No Active Membership Found'}) };
         }
 
         const membership = memberships.find(m => 
