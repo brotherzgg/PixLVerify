@@ -70,7 +70,8 @@ exports.handler = async (event, context) => {
 
     try {
         // Step 1: Get the user's identity and memberships, including the campaign for each membership
-        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships.campaign&fields%5Bmember%5D=currently_entitled_amount_cents,patron_status,pledge_relationship_start', {
+        // MODIFICATION 1: Added 'next_charge_date' to the fields%5Bmember%5D parameter
+        const identityResponse = await retry(() => axios.get('https://www.patreon.com/api/oauth2/v2/identity?include=memberships.campaign&fields%5Bmember%5D=currently_entitled_amount_cents,patron_status,pledge_relationship_start,next_charge_date', {
             headers: { 
                 'Authorization': `Bearer ${accessToken}`,
                 'User-Agent': 'PixL - Subscription Check'
@@ -140,13 +141,17 @@ exports.handler = async (event, context) => {
 
         // Include pledge_relationship_start in the response if subscribed
         const pledgeStart = membership.attributes.pledge_relationship_start;
+        // MODIFICATION 2: Extract next_charge_date
+        const nextChargeDate = membership.attributes.next_charge_date;
+
 
         return {
             statusCode: 200,
             body: JSON.stringify({ 
                 isSubscribed, 
                 amount: amountCents / 100,
-                ...(isSubscribed && pledgeStart ? { pledgeStart } : {})
+                // MODIFICATION 3: Conditionally include nextChargeDate in the response
+                ...(isSubscribed ? { pledgeStart, nextChargeDate } : {}) // Include both if subscribed
             })
         };
     } catch (error) {
